@@ -64,18 +64,17 @@ start_date = end_date - pd.Timedelta(days=365)
 mask = (series.index >= start_date) & (series.index <= end_date)
 recent_data = series[mask].copy()
 
-# 创建完整的日期范围（包括周末和节假日）
-date_range = pd.date_range(start=start_date, end=end_date, freq='D')
+# 只使用实际交易日的数据（不填充周末和节假日）
+# 这样可以确保只计算交易日之间的波动
+trading_dates = recent_data.index
+full_series = recent_data.copy()
 
-# 重新索引到完整日期范围，并使用前向填充（如果当天没有数据，使用前一天的数据）
-full_series = recent_data.reindex(date_range).ffill()
-
-# 如果第一个值仍然是NaN（说明起始日期之前没有数据），使用后向填充
-if len(full_series) > 0 and pd.isna(full_series.iloc[0]):
-    full_series = full_series.bfill()
-
-# 计算每日波动（与前一天的差值）
+# 计算每日波动（与前一个交易日的差值）
+# 只计算相邻交易日之间的波动
 daily_change = full_series.diff()
+
+# 创建完整的日期范围用于显示（包括周末和节假日）
+date_range = pd.date_range(start=start_date, end=end_date, freq='D')
 
 # 输出结果
 # print("【FRED】10年期国债收益率 - 过去365天数据及每日波动：")
@@ -83,23 +82,23 @@ daily_change = full_series.diff()
 # print(f"{'日期':<12} {'收益率(%)':<12} {'波动(bp)':<12} {'波动(%)':<12}")
 # print("-" * 70)
 
-# 显示所有数据
-for date in date_range:
-    date_str = date.strftime('%Y-%m-%d')
-    value = full_series[date]
-    change = daily_change[date]
-    
-    # 如果是第一天，波动为NaN
-    if pd.isna(change):
-        change_str = "-"
-        change_bp_str = "-"
-    else:
-        change_bp = change * 100  # 转换为基点(bp)
-        change_str = f"{change:.4f}"
-        change_bp_str = f"{change_bp:.2f}"
-    
-    # if value is not None and not pd.isna(value):
-    #     print(f"{date_str:<12} {value:>10.4f}% {change_bp_str:>10}bp {change_str:>10}")
+# 显示所有交易日数据
+# for date in trading_dates:
+#     date_str = date.strftime('%Y-%m-%d')
+#     value = full_series[date]
+#     change = daily_change[date]
+#     
+#     # 如果是第一天，波动为NaN
+#     if pd.isna(change):
+#         change_str = "-"
+#         change_bp_str = "-"
+#     else:
+#         change_bp = change * 100  # 转换为基点(bp)
+#         change_str = f"{change:.4f}"
+#         change_bp_str = f"{change_bp:.2f}"
+#     
+#     if value is not None and not pd.isna(value):
+#         print(f"{date_str:<12} {value:>10.4f}% {change_bp_str:>10}bp {change_str:>10}")
 
 print("=" * 70)
 
@@ -124,9 +123,9 @@ if len(valid_data) > 0:
         print(f"  最大下跌：{valid_changes.min()*100:.2f}bp")
         print(f"  标准差：{valid_changes.std()*100:.2f}bp")
     
-    # 创建包含所有信息的DataFrame以便筛选
+    # 创建包含所有信息的DataFrame以便筛选（只包含交易日）
     result_df = pd.DataFrame({
-        '日期': date_range,
+        '日期': trading_dates,
         '收益率(%)': full_series.values,
         '波动(bp)': daily_change.values * 100,
         '波动(%)': daily_change.values

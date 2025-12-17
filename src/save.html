@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>记事本</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #f6f7fb;
+        color: #1f2937;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      header {
+        padding: 12px 16px;
+        border-bottom: 1px solid #e5e7eb;
+        background: #fff;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+      }
+      header h1 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+      }
+      .controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      #save-btn {
+        padding: 8px 14px;
+        font-size: 14px;
+        border: none;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #6366f1, #ec4899);
+        color: #fff;
+        cursor: pointer;
+        transition: transform 80ms ease, box-shadow 150ms ease,
+          opacity 120ms ease;
+        box-shadow: 0 10px 25px rgba(99, 102, 241, 0.25);
+      }
+      #save-btn:active {
+        transform: translateY(1px);
+      }
+      #save-btn:hover {
+        opacity: 0.95;
+        box-shadow: 0 14px 30px rgba(236, 72, 153, 0.28);
+      }
+      #status {
+        font-size: 12px;
+        color: #6b7280;
+      }
+      textarea {
+        flex: 1;
+        width: 100%;
+        border: none;
+        padding: 16px 20px;
+        font-size: 16px;
+        line-height: 1.6;
+        resize: none;
+        outline: none;
+        background: #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>记事本</h1>
+      <div class="controls">
+        <button id="save-btn" type="button">保存</button>
+        <div id="status">正在加载…</div>
+      </div>
+    </header>
+    <textarea
+      id="note"
+      placeholder="开始输入，内容会自动保存到本地…"
+    ></textarea>
+
+    <script>
+      (function () {
+        const STORAGE_KEY = "temp-notepad-content";
+        const noteEl = document.getElementById("note");
+        const statusEl = document.getElementById("status");
+        const saveBtn = document.getElementById("save-btn");
+        let dirty = false;
+
+        const updateStatus = (text) => {
+          statusEl.textContent = text;
+        };
+
+        const load = () => {
+          const saved = localStorage.getItem(STORAGE_KEY);
+          if (saved !== null) {
+            noteEl.value = saved;
+            updateStatus("已加载本地保存");
+          } else {
+            updateStatus("暂无历史记录");
+          }
+        };
+
+        const save = (manual = false) => {
+          localStorage.setItem(STORAGE_KEY, noteEl.value);
+          dirty = false;
+          const label = manual ? "手动保存" : "已自动保存";
+          updateStatus(`${label} ${new Date().toLocaleTimeString()}`);
+        };
+
+        noteEl.addEventListener("input", () => {
+          dirty = true;
+          updateStatus("正在编辑…");
+        });
+
+        saveBtn.addEventListener("click", () => {
+          save(true);
+        });
+
+        // Command+S 手动保存（Windows/Linux Ctrl+S 同样适用）
+        window.addEventListener("keydown", (e) => {
+          const isSaveCombo =
+            (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s";
+          if (isSaveCombo) {
+            e.preventDefault();
+            save(true);
+          }
+        });
+
+        // 定时自动保存（每 60 秒），并每小时重置一次定时器
+        let autoSaveTimer = null;
+        const startAutoSave = () => {
+          if (autoSaveTimer) clearInterval(autoSaveTimer);
+          autoSaveTimer = setInterval(() => {
+            if (dirty) save();
+          }, 60000);
+        };
+        startAutoSave();
+
+        // 每小时重置定时器，避免潜在长时间驻留
+        setInterval(() => {
+          clearInterval(autoSaveTimer);
+          startAutoSave();
+        }, 3600000);
+
+        // 离开前尝试保存最后一次
+        window.addEventListener("beforeunload", () => {
+          if (dirty) save();
+        });
+
+        load();
+      })();
+    </script>
+  </body>
+</html>

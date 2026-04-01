@@ -49,7 +49,7 @@ def calculate_pe(price_df, eps_df):
     return price_df.dropna()
 
 def get_price(symbol, years):
-    df = ak.stock_us_hist(symbol=symbol, period="daily", start_date=(datetime.now() - timedelta(days=365 * years)).strftime('%Y%m%d'), end_date=datetime.now().strftime('%Y%m%d'), adjust="qfq")
+    df = ak.stock_us_daily(symbol=symbol, period="daily", start_date=(datetime.now() - timedelta(days=365 * years)).strftime('%Y%m%d'), end_date=datetime.now().strftime('%Y%m%d'), adjust="qfq")
     df["Date"] = pd.to_datetime(df["日期"])
     df = df.sort_values("Date")[["Date", "收盘", "开盘", "最高", "最低", "成交量"]]
     df.columns = ["Date", "Close", "Open", "High", "Low", "Volume"]

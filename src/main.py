@@ -5,7 +5,8 @@ import pandas as pd
 from datetime import datetime, timedelta
 import math
 import os
-import baostock as bs  # <--- 新增 A股 数据源
+import akshare as ak  # 美股数据源
+import baostock as bs  # A股数据源
 
 # 忽略 pandas 警告
 pd.options.mode.chained_assignment = None 
@@ -48,12 +49,10 @@ def calculate_pe(price_df, eps_df):
     return price_df.dropna()
 
 def get_price(symbol, years):
-    url = f"https://stooq.com/q/d/l/?s={symbol.lower()}.us&i=d"
-    df = pd.read_csv(url)
-    df["Date"] = pd.to_datetime(df["Date"])
-    df = df.sort_values("Date")
-    start_date = datetime.now() - timedelta(days=365 * years)
-    df = df[df["Date"] >= start_date].copy()
+    df = ak.stock_us_hist(symbol=symbol, period="daily", start_date=(datetime.now() - timedelta(days=365 * years)).strftime('%Y%m%d'), end_date=datetime.now().strftime('%Y%m%d'), adjust="qfq")
+    df["Date"] = pd.to_datetime(df["日期"])
+    df = df.sort_values("Date")[["Date", "收盘", "开盘", "最高", "最低", "成交量"]]
+    df.columns = ["Date", "Close", "Open", "High", "Low", "Volume"]
     return df
 
 def build_ttm_eps(df):

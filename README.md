@@ -33,3 +33,4 @@
 - 工作流会自动排除 `.git`、`.github`、`__pycache__`、`*.pyc`、`.DS_Store`、`*.md` 等不需要同步的文件
 - 确保服务器上的 `/root/pyAlert` 目录有写入权限
 - 为了安全，建议将敏感信息（如密码）存储在 GitHub Secrets 中，而不是直接写在代码里
+1
